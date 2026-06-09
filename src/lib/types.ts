@@ -26,8 +26,9 @@ export interface MissionForm {
   notes: string;
 }
 
-/** A persisted mission record (form + when it was saved). */
+/** A persisted mission record (form + unique id + when it was saved). */
 export interface StoredMission extends MissionForm {
+  id: string;      // unique identifier (generated on save)
   savedAt: string; // ISO timestamp
 }
 

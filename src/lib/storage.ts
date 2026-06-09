@@ -1,26 +1,47 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { MissionForm, StoredMission } from './types';
+import type { StoredMission } from './types';
 
-const STORAGE_KEY = 'central-missoes:last-mission';
+// ─── Chaves ──────────────────────────────────────────────────────────────────
+const NEW_KEY = 'central-missoes:missions';    // array atual
+const OLD_KEY = 'central-missoes:last-mission'; // chave legada (migração)
 
-/** Persist the mission locally, stamping it with the current time. */
-export async function saveMission(form: MissionForm): Promise<StoredMission> {
-  const record: StoredMission = { ...form, savedAt: new Date().toISOString() };
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(record));
-  return record;
-}
+// ─── Helper interno ──────────────────────────────────────────────────────────
 
-/** Load the last saved mission, or null when nothing is stored / data is corrupt. */
-export async function loadMission(): Promise<StoredMission | null> {
+/** Lê o array do AsyncStorage. Faz migração automática do formato antigo. */
+async function read(): Promise<StoredMission[]> {
   try {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as StoredMission;
+    const raw = await AsyncStorage.getItem(NEW_KEY);
+    if (raw) return JSON.parse(raw) as StoredMission[];
+
+    // Migração: existia uma missão no formato legado (chave única)?
+    const oldRaw = await AsyncStorage.getItem(OLD_KEY);
+    if (oldRaw) {
+      const old = JSON.parse(oldRaw) as Omit<StoredMission, 'id'> & { id?: string };
+      const migrated: StoredMission = { ...old, id: old.id ?? old.savedAt };
+      await AsyncStorage.setItem(NEW_KEY, JSON.stringify([migrated]));
+      await AsyncStorage.removeItem(OLD_KEY);
+      return [migrated];
+    }
+
+    return [];
   } catch {
-    return null;
+    return [];
   }
 }
 
-export async function clearMission(): Promise<void> {
-  await AsyncStorage.removeItem(STORAGE_KEY);
+/** Persiste o array inteiro no AsyncStorage. */
+async function write(missions: StoredMission[]): Promise<void> {
+  await AsyncStorage.setItem(NEW_KEY, JSON.stringify(missions));
+}
+
+// ─── API pública ─────────────────────────────────────────────────────────────
+
+/** Carrega todas as missões salvas (mais recente primeiro). */
+export async function loadMissions(): Promise<StoredMission[]> {
+  return read();
+}
+
+/** Persiste um array completo de missões. Usado pelo MissionsContext. */
+export async function saveMissions(missions: StoredMission[]): Promise<void> {
+  await write(missions);
 }
