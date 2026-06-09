@@ -1,5 +1,5 @@
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Background } from '@/components/Background';
@@ -22,6 +22,13 @@ function MissionCard({
   const priority = priorityMeta(mission.priority);
 
   const handleDelete = () => {
+    // Alert.alert é silencioso na web — usar window.confirm como fallback.
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Deseja remover "${mission.name}" permanentemente?`)) {
+        onDelete();
+      }
+      return;
+    }
     Alert.alert(
       'Excluir missão',
       `Deseja remover "${mission.name}" permanentemente?`,
@@ -32,65 +39,70 @@ function MissionCard({
     );
   };
 
+  // Card é View; a área "editar" e o botão "excluir" são Pressables irmãos
+  // para evitar button dentro de button no web (react-native-web).
   return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-      onPress={() => router.push(`/mission/${mission.id}`)}
-      accessibilityRole="button"
-      accessibilityLabel={`Missão ${mission.name}, ${mission.code}. Toque para editar.`}
-    >
-      {/* Linha superior: nome + código */}
-      <View style={styles.cardTop}>
-        <Text style={styles.missionName} numberOfLines={1}>
-          {mission.name}
-        </Text>
-        <Text style={styles.missionCode}>{mission.code}</Text>
-      </View>
+    <View style={styles.card}>
+      {/* Área clicável — navega para edição */}
+      <Pressable
+        style={({ pressed }) => [styles.cardBody, pressed && styles.cardBodyPressed]}
+        onPress={() => router.push(`/mission/${mission.id}`)}
+        accessibilityRole="button"
+        accessibilityLabel={`Missão ${mission.name}, ${mission.code}. Toque para editar.`}
+      >
+        {/* Linha superior: nome + código */}
+        <View style={styles.cardTop}>
+          <Text style={styles.missionName} numberOfLines={1}>
+            {mission.name}
+          </Text>
+          <Text style={styles.missionCode}>{mission.code}</Text>
+        </View>
 
-      {/* Badges de status e prioridade */}
-      <View style={styles.badgeRow}>
-        {status && (
-          <View
-            style={[
-              styles.badge,
-              {
-                backgroundColor: withAlpha(status.tone, 0.14),
-                borderColor: withAlpha(status.tone, 0.38),
-              },
-            ]}
-          >
-            <Text style={[styles.badgeText, { color: status.tone }]}>
-              {status.label}
-            </Text>
-          </View>
-        )}
-        {priority && (
-          <View
-            style={[
-              styles.badge,
-              {
-                backgroundColor: withAlpha(priority.tone, 0.14),
-                borderColor: withAlpha(priority.tone, 0.38),
-              },
-            ]}
-          >
-            <Text style={[styles.badgeText, { color: priority.tone }]}>
-              {priority.label}
-            </Text>
-          </View>
-        )}
-      </View>
+        {/* Badges de status e prioridade */}
+        <View style={styles.badgeRow}>
+          {status && (
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: withAlpha(status.tone, 0.14),
+                  borderColor: withAlpha(status.tone, 0.38),
+                },
+              ]}
+            >
+              <Text style={[styles.badgeText, { color: status.tone }]}>
+                {status.label}
+              </Text>
+            </View>
+          )}
+          {priority && (
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: withAlpha(priority.tone, 0.14),
+                  borderColor: withAlpha(priority.tone, 0.38),
+                },
+              ]}
+            >
+              <Text style={[styles.badgeText, { color: priority.tone }]}>
+                {priority.label}
+              </Text>
+            </View>
+          )}
+        </View>
 
-      {/* Comandante + Data */}
-      <View style={styles.metaRow}>
-        <Text style={styles.metaText} numberOfLines={1}>
-          {mission.commander}
-        </Text>
-        <Text style={styles.metaDot}>·</Text>
-        <Text style={styles.metaText}>{mission.launchDate}</Text>
-      </View>
+        {/* Comandante + Data */}
+        <View style={styles.metaRow}>
+          <Text style={styles.metaText} numberOfLines={1}>
+            {mission.commander}
+          </Text>
+          <Text style={styles.metaDot}>·</Text>
+          <Text style={styles.metaText}>{mission.launchDate}</Text>
+        </View>
+      </Pressable>
 
-      {/* Rodapé: timestamp + botão excluir */}
+      {/* Rodapé: timestamp + botão excluir (irmão, não filho do Pressable) */}
       <View style={styles.cardFooter}>
         <Text style={styles.timestamp}>
           Salvo {formatTimestamp(mission.savedAt)}
@@ -105,7 +117,7 @@ function MissionCard({
           <Text style={styles.deleteBtnText}>Excluir</Text>
         </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -278,12 +290,17 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  // Área interna pressionável (nome, badges, meta)
+  cardBody: {
     padding: spacing.lg,
+    paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
-  cardPressed: {
+  cardBodyPressed: {
     opacity: 0.82,
-    borderColor: colors.accentBorder,
+    backgroundColor: colors.surfaceElevated,
   },
   cardTop: {
     flexDirection: 'row',
@@ -345,8 +362,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: spacing.xs,
-    paddingTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },

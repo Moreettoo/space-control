@@ -45,3 +45,22 @@ export async function loadMissions(): Promise<StoredMission[]> {
 export async function saveMissions(missions: StoredMission[]): Promise<void> {
   await write(missions);
 }
+
+// ─── Alertas lidos ────────────────────────────────────────────────────────────
+
+const ALERTS_READ_KEY = 'central-missoes:alerts-read';
+
+/** Carrega os IDs de alertas marcados como lidos. */
+export async function loadReadAlertIds(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(ALERTS_READ_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Persiste o conjunto de IDs de alertas lidos. */
+export async function saveReadAlertIds(ids: string[]): Promise<void> {
+  await AsyncStorage.setItem(ALERTS_READ_KEY, JSON.stringify(ids));
+}

@@ -35,6 +35,31 @@ export interface StoredMission extends MissionForm {
 export type FieldErrors = Partial<Record<FieldKey, string>>;
 export type FieldTouched = Partial<Record<FieldKey, boolean>>;
 
+// ─── Alertas ─────────────────────────────────────────────────────────────────
+
+export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
+
+export type AlertType =
+  | 'CRITICAL_STATUS'
+  | 'CRITICAL_PRIORITY'
+  | 'LAUNCH_SOON'
+  | 'LAUNCH_OVERDUE'
+  | 'SOLO_MISSION'
+  | 'HIGH_ALTITUDE';
+
+export interface MissionAlert {
+  /** Derivado de missionId + type — estável entre renders. */
+  id: string;
+  missionId: string;
+  missionName: string;
+  missionCode: string;
+  type: AlertType;
+  severity: AlertSeverity;
+  message: string;
+  createdAt: string;
+  read: boolean;
+}
+
 export const EMPTY_FORM: MissionForm = {
   name: '',
   code: '',

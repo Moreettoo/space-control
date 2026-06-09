@@ -1,14 +1,16 @@
+import { AlertsProvider } from '@/context/AlertsContext';
+import { MissionsProvider } from '@/context/MissionsContext';
+import { colors } from '@/lib/theme';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { MissionsProvider } from '@/context/MissionsContext';
-import { colors } from '@/lib/theme';
 
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <MissionsProvider>
-        <StatusBar style="light" />
+        <AlertsProvider>
+          <StatusBar style="light" />
         <Stack
           screenOptions={{
             headerShown: false,
@@ -31,6 +33,7 @@ export default function RootLayout() {
             options={{ animation: 'slide_from_right' }}
           />
         </Stack>
+        </AlertsProvider>
       </MissionsProvider>
     </SafeAreaProvider>
   );
